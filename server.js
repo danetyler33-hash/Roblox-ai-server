@@ -1,37 +1,35 @@
+// server.js
 const express = require("express");
 const cors = require("cors");
-const OpenAI = require("openai"); // <- new simplified import
+const OpenAI = require("openai");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // Railway variable
-});
+// Initialize OpenAI with API key from Railway
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Minimal /chat route for Roblox
 app.post("/chat", async (req, res) => {
-  const message = req.body.message || "Hello";
+  const { message } = req.body;
+
+  if (!message) return res.status(400).json({ error: "No message provided" });
 
   try {
-    const completion = await openai.chat.completions.create({
+    const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a friendly Roblox NPC." },
-        { role: "user", content: message }
-      ]
+      messages: [{ role: "user", content: message }]
     });
 
-    const reply = completion.choices[0].message.content;
+    const reply = response.choices[0].message.content;
     res.json({ reply });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ reply: "Sorry, something went wrong." });
+    res.status(500).json({ error: "AI request failed" });
   }
 });
 
+// Listen on Railway port
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
