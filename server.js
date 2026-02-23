@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const cors = require("cors");
 const { Configuration, OpenAIApi } = require("openai");
@@ -7,37 +6,38 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Make sure your API key is set in Railway variables as OPENAI_API_KEY
+// Make sure you set OPENAI_API_KEY in Railway variables
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
-// Add the /chat POST route
+// Minimal /chat endpoint
 app.post("/chat", async (req, res) => {
   try {
-    const { message } = req.body;
+    const userMessage = req.body.message; // Roblox will send { message: "..." }
 
-    if (!message) {
-      return res.status(400).json({ reply: "No message provided" });
+    if (!userMessage) {
+      return res.status(400).json({ error: "No message provided" });
     }
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const completion = await openai.createChatCompletion({
+      model: "gpt-4",
       messages: [
-        { role: "system", content: "You are a friendly NPC in a Roblox game." },
-        { role: "user", content: message }
+        { role: "system", content: "You are a Roblox NPC." },
+        { role: "user", content: userMessage }
       ],
     });
 
-    const reply = response.choices[0].message.content;
-    res.json({ reply });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ reply: "Server error" });
+    const aiResponse = completion.data.choices[0].message.content;
+    res.json({ reply: aiResponse });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "AI request failed" });
   }
 });
 
+// Dynamic port for Railway
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
