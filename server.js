@@ -1,51 +1,44 @@
+// server.js
 const express = require("express");
 const cors = require("cors");
-const OpenAI = require("openai");
+const { Configuration, OpenAIApi } = require("openai");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Create OpenAI instance using Railway environment variable
-const openai = new OpenAI({
+// Make sure your API key is set in Railway variables as OPENAI_API_KEY
+const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
+const openai = new OpenAIApi(configuration);
 
+// Add the /chat POST route
 app.post("/chat", async (req, res) => {
   try {
-    const userMessage = req.body.message;
+    const { message } = req.body;
 
-    if (!userMessage) {
-      return res.status(400).json({ reply: "No message provided." });
+    if (!message) {
+      return res.status(400).json({ reply: "No message provided" });
     }
 
-    const completion = await openai.chat.completions.create({
+    const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content: "You are a friendly AI robot inside a Roblox game. Keep responses short and natural."
-        },
-        {
-          role: "user",
-          content: userMessage
-        }
+        { role: "system", content: "You are a friendly NPC in a Roblox game." },
+        { role: "user", content: message }
       ],
     });
 
-    res.json({
-      reply: completion.choices[0].message.content
-    });
-
+    const reply = response.choices[0].message.content;
+    res.json({ reply });
   } catch (error) {
-    console.error("AI Error:", error);
-    res.status(500).json({ reply: "AI error." });
+    console.error(error);
+    res.status(500).json({ reply: "Server error" });
   }
 });
 
-// IMPORTANT: Railway dynamic port
-const PORT = process.env.PORT || 3000;
-
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+  console.log(`Server running on port ${PORT}`);
 });
